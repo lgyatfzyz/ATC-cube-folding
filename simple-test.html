@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简化系统测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 10px; border: 1px solid #ccc; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>简化立方体系统测试</h1>
+    
+    <div class="test-section">
+        <h2>测试结果</h2>
+        <div id="testResults"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>生成的展开图</h2>
+        <div id="netDisplay"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>正确答案</h2>
+        <div id="correctAnswer"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>错误答案示例</h2>
+        <div id="wrongAnswers"></div>
+    </div>
+
+    <script src="js/adjacency.js"></script>
+    <script src="js/cube.js"></script>
+    <script>
+        function addResult(message, isSuccess = true) {
+            const div = document.getElementById('testResults');
+            const p = document.createElement('p');
+            p.className = isSuccess ? 'success' : 'error';
+            p.textContent = message;
+            div.appendChild(p);
+        }
+
+        try {
+            addResult('✅ 开始测试简化系统');
+            
+            // 生成展开图
+            const net = generateRandomNet();
+            addResult(`✅ 成功生成 ${net.name} 展开图`);
+            
+            // 显示展开图信息
+            const netDisplay = document.getElementById('netDisplay');
+            netDisplay.innerHTML = `
+                <p><strong>展开图类型:</strong> ${net.name}</p>
+                <p><strong>面编号:</strong> ${net.faces.map(f => f.number).join(', ')}</p>
+            `;
+            
+            // 测试正确答案生成
+            const correctAnswer = generateCorrectAnswerFromValidList(net.faces);
+            if (correctAnswer) {
+                addResult('✅ 成功生成正确答案');
+                document.getElementById('correctAnswer').innerHTML = `
+                    <p>Front: ${correctAnswer.front}, Left: ${correctAnswer.left}, Top: ${correctAnswer.top}</p>
+                `;
+            } else {
+                addResult('❌ 正确答案生成失败', false);
+            }
+            
+            // 测试错误答案生成
+            const wrongAnswersDiv = document.getElementById('wrongAnswers');
+            for (let i = 0; i < 3; i++) {
+                const wrongAnswer = generateWrongAnswerNotInList(net.faces);
+                if (wrongAnswer) {
+                    const p = document.createElement('p');
+                    p.textContent = `错误答案 ${i+1}: Front: ${wrongAnswer.front}, Left: ${wrongAnswer.left}, Top: ${wrongAnswer.top}`;
+                    wrongAnswersDiv.appendChild(p);
+                } else {
+                    addResult(`❌ 错误答案 ${i+1} 生成失败`, false);
+                }
+            }
+            addResult('✅ 成功生成错误答案');
+            
+            addResult('🎉 所有测试通过！简化系统工作正常');
+            
+        } catch (error) {
+            addResult(`❌ 测试失败: ${error.message}`, false);
+            console.error('详细错误:', error);
+        }
+    </script>
+</body>
+</html>

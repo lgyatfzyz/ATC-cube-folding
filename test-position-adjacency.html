@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>基于位置的邻接关系系统测试</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background-color: #f5f5f5; 
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+        }
+        h1, h2 { color: #333; }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #fafafa;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .warning { color: #ffc107; }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 40px);
+            gap: 2px;
+            margin: 10px 0;
+        }
+        .cell {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        .face { background-color: #e3f2fd; }
+        .empty { background-color: #fafafa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 基于位置的邻接关系系统测试</h1>
+        
+        <div class="test-section">
+            <h2>1. 系统初始化测试</h2>
+            <button onclick="testSystemInitialization()">运行初始化测试</button>
+            <div id="initResults"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>2. 位置邻接关系测试</h2>
+            <button onclick="testPositionAdjacency()">运行位置邻接测试</button>
+            <div id="positionResults"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>3. 展开图生成测试</h2>
+            <button onclick="testNetGeneration()">生成并测试展开图</button>
+            <div id="netDisplay"></div>
+            <div id="netResults"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>4. 立方体验证测试</h2>
+            <button onclick="testCubeValidation()">运行立方体验证测试</button>
+            <div id="cubeResults"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>5. 兼容性测试</h2>
+            <button onclick="testBackwardsCompatibility()">运行向后兼容性测试</button>
+            <div id="compatibilityResults"></div>
+        </div>
+    </div>
+
+    <script src="js/adjacency.js"></script>
+    <script src="js/cube.js"></script>
+    <script>
+        let testResults = {
+            passed: 0,
+            failed: 0,
+            total: 0
+        };
+
+        function logTest(name, passed, details = '') {
+            testResults.total++;
+            if (passed) {
+                testResults.passed++;
+                console.log(`✅ ${name}: ${details}`);
+                return `<div class="success">✅ ${name}: ${details}</div>`;
+            } else {
+                testResults.failed++;
+                console.log(`❌ ${name}: ${details}`);
+                return `<div class="error">❌ ${name}: ${details}</div>`;
+            }
+        }
+
+        function testSystemInitialization() {
+            const results = document.getElementById('initResults');
+            let html = '<h3>系统初始化测试结果:</h3>';
+            
+            // 测试函数是否存在
+            html += logTest('adjacency.js 加载', typeof setAdjacencyForNet === 'function', '基础函数可用');
+            html += logTest('cube.js 加载', typeof generateRandomNet === 'function', '立方体函数可用');
+            html += logTest('位置邻接函数', typeof isPositionAdjacent === 'function', '新的位置基础函数可用');
+            html += logTest('向后兼容函数', typeof isAdjacent === 'function', '兼容性函数可用');
+            
+            // 测试邻接关系表
+            const netTypes = ['十字形', 'T形', 'Z形', 'L形'];
+            for (const netType of netTypes) {
+                try {
+                    setAdjacencyForNet(netType);
+                    const adjacency = getCurrentAdjacency();
+                    const hasValidStructure = adjacency && Object.keys(adjacency).length === 6;
+                    html += logTest(`${netType} 邻接关系`, hasValidStructure, 
+                        hasValidStructure ? '结构正确' : '结构异常');
+                } catch (error) {
+                    html += logTest(`${netType} 邻接关系`, false, error.message);
+                }
+            }
+            
+            results.innerHTML = html;
+        }
+
+        function testPositionAdjacency() {
+            const results = document.getElementById('positionResults');
+            let html = '<h3>位置邻接关系测试结果:</h3>';
+            
+            // 为每种展开图测试位置邻接关系
+            const netTypes = ['十字形', 'T形', 'Z形', 'L形'];
+            
+            for (const netType of netTypes) {
+                setAdjacencyForNet(netType);
+                html += `<h4>${netType} 展开图测试:</h4>`;
+                
+                // 测试对称性
+                let symmetryPassed = true;
+                for (let pos1 = 0; pos1 <= 5; pos1++) {
+                    for (let pos2 = 0; pos2 <= 5; pos2++) {
+                        if (isPositionAdjacent(pos1, pos2) !== isPositionAdjacent(pos2, pos1)) {
+                            symmetryPassed = false;
+                            break;
+                        }
+                    }
+                    if (!symmetryPassed) break;
+                }
+                html += logTest(`${netType} 对称性`, symmetryPassed, '邻接关系双向一致');
+                
+                // 测试每个位置的邻接数量
+                let countPassed = true;
+                for (let pos = 0; pos <= 5; pos++) {
+                    const adjacent = getAdjacentPositions(pos);
+                    if (adjacent.length !== 4) {
+                        countPassed = false;
+                        break;
+                    }
+                }
+                html += logTest(`${netType} 邻接数量`, countPassed, '每个位置都有4个邻接位置');
+            }
+            
+            results.innerHTML = html;
+        }
+
+        function displayNet(net) {
+            const maxRow = Math.max(...net.faces.map(f => f.row));
+            const maxCol = Math.max(...net.faces.map(f => f.col));
+            
+            let html = `<h4>${net.name} 展开图:</h4>`;
+            html += '<div style="font-family: monospace; margin: 10px 0;">';
+            
+            for (let row = 0; row <= maxRow; row++) {
+                for (let col = 0; col <= maxCol; col++) {
+                    const face = net.faces.find(f => f.row === row && f.col === col);
+                    if (face) {
+                        html += `[${face.number}] `;
+                    } else {
+                        html += '   ';
+                    }
+                }
+                html += '<br>';
+            }
+            html += '</div>';
+            
+            // 显示面的位置映射
+            html += '<p>位置索引映射: ';
+            net.faces.forEach((face, index) => {
+                html += `位置${index}→数字${face.number} `;
+            });
+            html += '</p>';
+            
+            return html;
+        }
+
+        function testNetGeneration() {
+            const netDisplay = document.getElementById('netDisplay');
+            const results = document.getElementById('netResults');
+            let html = '<h3>展开图生成测试结果:</h3>';
+            
+            try {
+                // 生成一个随机展开图
+                const net = generateRandomNet();
+                
+                // 显示展开图
+                netDisplay.innerHTML = displayNet(net);
+                
+                // 测试展开图的基本属性
+                html += logTest('展开图生成', net !== null, '成功生成展开图');
+                html += logTest('面数正确', net.faces && net.faces.length === 6, '包含6个面');
+                html += logTest('数字唯一', new Set(net.faces.map(f => f.number)).size === 6, '数字1-6各出现一次');
+                
+                // 测试邻接关系是否正确设置
+                const currentType = getCurrentNetType();
+                html += logTest('邻接关系设置', currentType === net.name, `当前类型: ${currentType}`);
+                
+                // 测试基于位置的邻接关系
+                let adjacencyWorks = true;
+                try {
+                    for (let i = 0; i < 6; i++) {
+                        for (let j = i + 1; j < 6; j++) {
+                            const isAdj = isPositionAdjacent(i, j);
+                            // 只要不抛错误就算成功
+                        }
+                    }
+                } catch (error) {
+                    adjacencyWorks = false;
+                }
+                html += logTest('位置邻接查询', adjacencyWorks, '位置邻接关系可正常查询');
+                
+            } catch (error) {
+                html += logTest('展开图生成', false, error.message);
+            }
+            
+            results.innerHTML = html;
+        }
+
+        function testCubeValidation() {
+            const results = document.getElementById('cubeResults');
+            let html = '<h3>立方体验证测试结果:</h3>';
+            
+            try {
+                // 生成展开图
+                const net = generateRandomNet();
+                
+                // 测试正确立方体生成
+                const correctCube = generateCorrectCube(net);
+                html += logTest('正确立方体生成', correctCube !== null, 
+                    `前面:${correctCube.front}, 左面:${correctCube.left}, 上面:${correctCube.top}`);
+                
+                // 测试立方体验证函数
+                const isValid = isValidCubeFaces(correctCube, net);
+                html += logTest('立方体验证', isValid, '生成的立方体通过验证');
+                
+                // 测试一些无效组合
+                const invalidCube1 = {front: 1, left: 1, top: 2}; // 重复面
+                const invalid1 = isValidCubeFaces(invalidCube1, net);
+                html += logTest('重复面检测', !invalid1, '正确拒绝重复面');
+                
+                // 测试多次生成的一致性
+                let consistencyPassed = true;
+                for (let i = 0; i < 5; i++) {
+                    const testNet = generateRandomNet();
+                    const testCube = generateCorrectCube(testNet);
+                    if (!isValidCubeFaces(testCube, testNet)) {
+                        consistencyPassed = false;
+                        break;
+                    }
+                }
+                html += logTest('生成一致性', consistencyPassed, '多次生成都能通过验证');
+                
+            } catch (error) {
+                html += logTest('立方体验证测试', false, error.message);
+            }
+            
+            results.innerHTML = html;
+        }
+
+        function testBackwardsCompatibility() {
+            const results = document.getElementById('compatibilityResults');
+            let html = '<h3>向后兼容性测试结果:</h3>';
+            
+            try {
+                // 生成展开图
+                const net = generateRandomNet();
+                
+                // 测试旧版isAdjacent函数
+                const face1 = net.faces[0].number;
+                const face2 = net.faces[1].number;
+                
+                // 使用新的基于位置的方法
+                const newResult = isAdjacent(face1, face2, net.faces);
+                html += logTest('新版isAdjacent', typeof newResult === 'boolean', '函数正常返回布尔值');
+                
+                // 使用传统的基于数字的方法
+                const oldResult = isAdjacentByNumber(face1, face2);
+                html += logTest('传统isAdjacentByNumber', typeof oldResult === 'boolean', '兼容性函数正常工作');
+                
+                // 测试getAdjacentFaces函数
+                const adjacentFaces = getAdjacentFaces(face1, net.faces);
+                html += logTest('getAdjacentFaces', Array.isArray(adjacentFaces), `返回${adjacentFaces.length}个邻接面`);
+                
+                // 测试canMeetAtVertex函数
+                const canMeet = canMeetAtVertex(1, 2, 3, net.faces);
+                html += logTest('canMeetAtVertex', typeof canMeet === 'boolean', '顶点相遇检测正常');
+                
+            } catch (error) {
+                html += logTest('向后兼容性测试', false, error.message);
+            }
+            
+            results.innerHTML = html;
+        }
+
+        // 页面加载完成后运行基础测试
+        window.addEventListener('load', () => {
+            console.log('🚀 基于位置的邻接关系系统测试页面已加载');
+        });
+    </script>
+</body>
+</html>

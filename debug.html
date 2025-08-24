@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>调试页面</title>
+</head>
+<body>
+    <h1>调试简化系统</h1>
+    <div id="debug-output"></div>
+
+    <script src="js/adjacency.js"></script>
+    <script src="js/cube.js"></script>
+    <script>
+        function debugOutput(message) {
+            const output = document.getElementById('debug-output');
+            output.innerHTML += '<p>' + message + '</p>';
+            console.log(message);
+        }
+
+        try {
+            debugOutput('=== 调试简化系统 ===');
+            
+            // 检查基础函数
+            debugOutput('检查 generateRandomNet: ' + (typeof generateRandomNet));
+            debugOutput('检查 generateCorrectAnswerFromValidList: ' + (typeof generateCorrectAnswerFromValidList));
+            debugOutput('检查 generateWrongAnswerNotInList: ' + (typeof generateWrongAnswerNotInList));
+            
+            // 生成一个测试展开图
+            debugOutput('开始生成测试展开图...');
+            const testNet = generateRandomNet();
+            debugOutput('生成的展开图: ' + JSON.stringify(testNet.name + ' 面数: ' + testNet.faces.length));
+            
+            // 测试正确答案生成
+            debugOutput('测试正确答案生成...');
+            const correctAnswer = generateCorrectAnswerFromValidList(testNet.faces);
+            debugOutput('正确答案: ' + JSON.stringify(correctAnswer));
+            
+            // 测试错误答案生成
+            debugOutput('测试错误答案生成...');
+            const wrongAnswer = generateWrongAnswerNotInList(testNet.faces);
+            debugOutput('错误答案: ' + JSON.stringify(wrongAnswer));
+            
+            debugOutput('=== 简化系统测试完成 ===');
+            
+        } catch (error) {
+            debugOutput('错误: ' + error.message);
+            debugOutput('错误详情: ' + error.stack);
+        }
+    </script>
+</body>
+</html>
