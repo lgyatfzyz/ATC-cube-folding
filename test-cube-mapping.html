@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>立方体面映射测试</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .test-container {
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+        }
+        .mapping-analysis {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+        .net-info, .cube-info, .adjacency-info {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .net-info h4, .cube-info h4, .adjacency-info h4 {
+            margin-top: 0;
+            color: #333;
+        }
+        .face-list {
+            list-style: none;
+            padding: 0;
+        }
+        .face-list li {
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .test-controls {
+            margin: 20px 0;
+            text-align: center;
+        }
+        .test-controls button {
+            margin: 5px;
+            padding: 10px 20px;
+            font-size: 14px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background: #007AFF;
+            color: white;
+        }
+        .test-controls button:hover {
+            background: #0056b3;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+        .preview-small {
+            transform: scale(0.7);
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>立方体面映射分析工具</h1>
+        
+        <div class="test-controls">
+            <button onclick="testSpecificNet('十字形')">测试十字形</button>
+            <button onclick="testSpecificNet('T形')">测试T形</button>
+            <button onclick="testSpecificNet('Z形')">测试Z形</button>
+            <button onclick="testSpecificNet('L形')">测试L形</button>
+            <button onclick="testRandomNet()">测试随机展开图</button>
+            <button onclick="analyzeAllNets()">分析所有展开图</button>
+        </div>
+
+        <div class="test-section" id="currentTest">
+            <h2>当前测试结果</h2>
+            <div id="testResults"></div>
+        </div>
+        
+        <div class="test-section" id="mappingAnalysis">
+            <h2>映射关系分析</h2>
+            <div class="mapping-analysis">
+                <div class="net-info">
+                    <h4>展开图信息</h4>
+                    <div id="netInfo"></div>
+                    <div id="netPreview"></div>
+                </div>
+                <div class="cube-info">
+                    <h4>立方体映射</h4>
+                    <div id="cubeInfo"></div>
+                    <div id="cubePreview"></div>
+                </div>
+                <div class="adjacency-info">
+                    <h4>邻接关系检查</h4>
+                    <div id="adjacencyInfo"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/adjacency.js"></script>
+    <script src="js/cube.js"></script>
+    
+    <script>
+        // 当前测试的展开图
+        let currentNet = null;
+        
+        function testSpecificNet(netType) {
+            console.log(`\n=== 测试 ${netType} 展开图映射 ===`);
+            
+            // 找到对应的展开图模板
+            const template = CUBE_NETS.find(net => net.name === netType);
+            if (!template) {
+                showError(`未找到 ${netType} 展开图模板`);
+                return;
+            }
+            
+            // 设置邻接关系
+            if (typeof setAdjacencyForNet === 'function') {
+                setAdjacencyForNet(netType);
+            }
+            
+            // 创建测试展开图（使用固定的面编号便于分析）
+            const testFaces = [1, 2, 3, 4, 5, 6];
+            currentNet = {
+                name: template.name,
+                gridSize: template.gridSize,
+                faces: template.pattern.map((position, index) => ({
+                    row: position[0],
+                    col: position[1],
+                    number: testFaces[index],
+                    position: index  // 添加位置索引
+                }))
+            };
+            
+            // 分析映射关系
+            analyzeMapping(currentNet);
+        }
+        
+        function testRandomNet() {
+            try {
+                currentNet = generateRandomNet();
+                if (currentNet) {
+                    analyzeMapping(currentNet);
+                } else {
+                    showError('随机展开图生成失败');
+                }
+            } catch (error) {
+                showError('生成随机展开图时发生错误: ' + error.message);
+            }
+        }
+        
+        function analyzeMapping(net) {
+            console.log('分析展开图:', net);
+            
+            // 显示展开图信息
+            displayNetInfo(net);
+            
+            // 计算立方体映射
+            const mapping = calculateCubeFaceMapping(net);
+            displayCubeMapping(net, mapping);
+            
+            // 检查邻接关系
+            checkAdjacencyMapping(net, mapping);
+            
+            // 渲染预览
+            renderNetPreview(net);
+            renderCubePreview(net, mapping);
+        }
+        
+        function displayNetInfo(net) {
+            const netInfo = document.getElementById('netInfo');
+            let html = `
+                <p><strong>类型:</strong> ${net.name}</p>
+                <p><strong>网格大小:</strong> ${net.gridSize[0]} × ${net.gridSize[1]}</p>
+                <p><strong>面编号和位置:</strong></p>
+                <ul class="face-list">
+            `;
+            
+            net.faces.forEach((face, index) => {
+                html += `<li>位置${index}: 面${face.number} (行${face.row}, 列${face.col})</li>`;
+            });
+            
+            html += '</ul>';
+            netInfo.innerHTML = html;
+        }
+        
+        function displayCubeMapping(net, mapping) {
+            const cubeInfo = document.getElementById('cubeInfo');
+            let html = `
+                <p><strong>立方体面映射:</strong></p>
+                <ul class="face-list">
+                    <li>前面 (Front): ${mapping.front}</li>
+                    <li>后面 (Back): ${mapping.back}</li>
+                    <li>左面 (Left): ${mapping.left}</li>
+                    <li>右面 (Right): ${mapping.right}</li>
+                    <li>顶面 (Top): ${mapping.top}</li>
+                    <li>底面 (Bottom): ${mapping.bottom}</li>
+                </ul>
+            `;
+            cubeInfo.innerHTML = html;
+        }
+        
+        function checkAdjacencyMapping(net, mapping) {
+            const adjacencyInfo = document.getElementById('adjacencyInfo');
+            let html = '<p><strong>邻接关系验证:</strong></p><ul class="face-list">';
+            
+            // 定义立方体标准邻接关系
+            const cubeAdjacency = {
+                front: ['left', 'right', 'top', 'bottom'],
+                back: ['left', 'right', 'top', 'bottom'],
+                left: ['front', 'back', 'top', 'bottom'],
+                right: ['front', 'back', 'top', 'bottom'],
+                top: ['front', 'back', 'left', 'right'],
+                bottom: ['front', 'back', 'left', 'right']
+            };
+            
+            let errorCount = 0;
+            
+            // 检查每对面的邻接关系
+            for (const [position1, face1] of Object.entries(mapping)) {
+                const adjacentPositions = cubeAdjacency[position1];
+                for (const position2 of adjacentPositions) {
+                    const face2 = mapping[position2];
+                    const shouldBeAdjacent = true;
+                    
+                    // 使用展开图的邻接关系检查
+                    const actuallyAdjacent = isAdjacent(face1, face2, net.faces);
+                    
+                    const status = actuallyAdjacent === shouldBeAdjacent ? 
+                        '<span class="success">✓</span>' : 
+                        '<span class="error">✗</span>';
+                    
+                    if (actuallyAdjacent !== shouldBeAdjacent) {
+                        errorCount++;
+                    }
+                    
+                    html += `<li>${status} 面${face1}(${position1}) ↔ 面${face2}(${position2}): ${actuallyAdjacent ? '相邻' : '不相邻'}</li>`;
+                }
+            }
+            
+            html += '</ul>';
+            
+            if (errorCount > 0) {
+                html = `<p class="error">发现 ${errorCount} 个映射错误!</p>` + html;
+            } else {
+                html = `<p class="success">映射关系全部正确!</p>` + html;
+            }
+            
+            adjacencyInfo.innerHTML = html;
+        }
+        
+        function renderNetPreview(net) {
+            const container = document.getElementById('netPreview');
+            container.innerHTML = '<div id="miniNetContainer" class="preview-small"></div>';
+            renderNet(net, 'miniNetContainer');
+        }
+        
+        function renderCubePreview(net, mapping) {
+            const container = document.getElementById('cubePreview');
+            container.innerHTML = `
+                <div class="preview-cube-3d preview-small">
+                    <div class="preview-cube-container" style="transform: rotateX(-20deg) rotateY(-35deg);">
+                        <div class="preview-cube-face preview-front" data-face="${mapping.front}">${mapping.front}</div>
+                        <div class="preview-cube-face preview-back" data-face="${mapping.back}">${mapping.back}</div>
+                        <div class="preview-cube-face preview-left" data-face="${mapping.left}">${mapping.left}</div>
+                        <div class="preview-cube-face preview-right" data-face="${mapping.right}">${mapping.right}</div>
+                        <div class="preview-cube-face preview-top" data-face="${mapping.top}">${mapping.top}</div>
+                        <div class="preview-cube-face preview-bottom" data-face="${mapping.bottom}">${mapping.bottom}</div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function calculateCubeFaceMapping(net) {
+            // 使用主文件中的映射函数
+            if (net.name === '十字形') {
+                return mapCrossCubeFaces(net.faces);
+            } else if (net.name.includes('T形')) {
+                return mapTCubeFaces(net.faces);
+            } else if (net.name.includes('L形')) {
+                return mapLCubeFaces(net.faces);
+            } else if (net.name.includes('Z形')) {
+                return mapZCubeFaces(net.faces);
+            } else {
+                return mapGenericCubeFaces(net.faces);
+            }
+        }
+        
+        // 从主文件复制映射函数
+        function mapCrossCubeFaces(faces) {
+            return {
+                front: faces[2].number,  // 中心
+                back: faces[4].number,   // 最右
+                left: faces[1].number,   // 左
+                right: faces[3].number,  // 右
+                top: faces[0].number,    // 上
+                bottom: faces[5].number  // 下
+            };
+        }
+        
+        function mapTCubeFaces(faces) {
+            return {
+                front: faces[2].number,  // 中心
+                back: faces[5].number,   // 下
+                left: faces[1].number,   // 左中
+                right: faces[3].number,  // 右中
+                top: faces[0].number,    // 上
+                bottom: faces[4].number  // 最右中
+            };
+        }
+        
+        function mapLCubeFaces(faces) {
+            return {
+                front: faces[2].number,
+                back: faces[5].number,
+                left: faces[1].number,
+                right: faces[3].number,
+                top: faces[0].number,
+                bottom: faces[4].number
+            };
+        }
+        
+        function mapZCubeFaces(faces) {
+            return {
+                front: faces[2].number,
+                back: faces[5].number,
+                left: faces[1].number,
+                right: faces[3].number,
+                top: faces[0].number,
+                bottom: faces[4].number
+            };
+        }
+        
+        function mapGenericCubeFaces(faces) {
+            return {
+                front: faces[0].number,
+                back: faces[1].number,
+                left: faces[2].number,
+                right: faces[3].number,
+                top: faces[4].number,
+                bottom: faces[5].number
+            };
+        }
+        
+        function showError(message) {
+            const results = document.getElementById('testResults');
+            results.innerHTML = `<p class="error">错误: ${message}</p>`;
+        }
+        
+        function analyzeAllNets() {
+            const netTypes = ['十字形', 'T形', 'Z形', 'L形'];
+            let results = '<h3>所有展开图映射分析</h3>';
+            
+            for (const netType of netTypes) {
+                results += `<h4>${netType}:</h4>`;
+                // 这里可以添加批量分析逻辑
+                results += '<p>点击对应按钮进行详细分析</p>';
+            }
+            
+            document.getElementById('testResults').innerHTML = results;
+        }
+        
+        // 页面加载时自动测试十字形
+        window.addEventListener('load', () => {
+            testSpecificNet('十字形');
+        });
+    </script>
+</body>
+</html>

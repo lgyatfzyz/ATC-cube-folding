@@ -63,12 +63,103 @@ const CUBE_3D_ADJACENCY = {
     6: [1, 2, 3, 4]   // 下面邻接：前、后、左、右
 };
 
+// T形变体展开图的位置邻接关系
+// 位置布局: [0:上, 1:左中, 2:中心, 3:右中, 4:最右中, 5:下]
+// pattern: [[0,2], [1,0], [1,1], [1,2], [1,3], [2,1]]
+const T_VARIANT_POSITION_ADJACENCY = {
+    0: [1, 2, 3, 4],    // 上(0) 邻接 左中(1)、中心(2)、右中(3)、最右中(4)
+    1: [0, 2, 4, 5],    // 左中(1) 邻接 上(0)、中心(2)、最右中(4)、下(5)
+    2: [0, 1, 3, 5],    // 中心(2) 邻接 上(0)、左中(1)、右中(3)、下(5)
+    3: [0, 2, 4, 5],    // 右中(3) 邻接 上(0)、中心(2)、最右中(4)、下(5)
+    4: [0, 1, 3, 5],    // 最右中(4) 邻接 上(0)、左中(1)、右中(3)、下(5)
+    5: [1, 2, 3, 4]     // 下(5) 邻接 左中(1)、中心(2)、右中(3)、最右中(4)
+};
+
+// L形变体1展开图的位置邻接关系
+// 位置布局: [0:左上, 1:中上, 2:右上, 3:最右上, 4:左下, 5:底左]
+// pattern: [[0,3], [1,0], [1,1], [1,2], [1,3], [2,0]]
+const L_VARIANT1_POSITION_ADJACENCY = {
+    0: [1, 2, 3, 4],    // 左上(0) 邻接 中上(1)、右上(2)、最右上(3)、左下(4)
+    1: [0, 2, 4, 5],    // 中上(1) 邻接 左上(0)、右上(2)、左下(4)、底左(5)
+    2: [0, 1, 3, 5],    // 右上(2) 邻接 左上(0)、中上(1)、最右上(3)、底左(5)
+    3: [0, 2, 4, 5],    // 最右上(3) 邻接 左上(0)、右上(2)、左下(4)、底左(5)
+    4: [0, 1, 3, 5],    // 左下(4) 邻接 左上(0)、中上(1)、最右上(3)、底左(5)
+    5: [1, 2, 3, 4]     // 底左(5) 邻接 中上(1)、右上(2)、最右上(3)、左下(4)
+};
+
+// L形变体2展开图的位置邻接关系
+// 位置布局: [0:右上, 1:左中, 2:左中右, 3:右中, 4:最右中, 5:下左]
+// pattern: [[0,3], [1,0], [1,1], [1,2], [1,3], [2,1]]
+const L_VARIANT2_POSITION_ADJACENCY = {
+    0: [1, 2, 3, 4],    // 右上(0) 邻接 左中(1)、左中右(2)、右中(3)、最右中(4)
+    1: [0, 2, 4, 5],    // 左中(1) 邻接 右上(0)、左中右(2)、最右中(4)、下左(5)
+    2: [0, 1, 3, 5],    // 左中右(2) 邻接 右上(0)、左中(1)、右中(3)、下左(5)
+    3: [0, 2, 4, 5],    // 右中(3) 邻接 右上(0)、左中右(2)、最右中(4)、下左(5)
+    4: [0, 1, 3, 5],    // 最右中(4) 邻接 右上(0)、左中(1)、右中(3)、下左(5)
+    5: [1, 2, 3, 4]     // 下左(5) 邻接 左中(1)、左中右(2)、右中(3)、最右中(4)
+};
+
+// Z形变体展开图的位置邻接关系
+// 位置布局: [0:左上, 1:中上, 2:右上, 3:右中, 4:右右中, 5:最右中]
+// pattern: [[0,0], [0,1], [0,2], [1,2], [1,3], [1,4]]
+const Z_VARIANT_POSITION_ADJACENCY = {
+    0: [1, 2, 3, 4],    // 左上(0) 邻接 中上(1)、右上(2)、右中(3)、右右中(4)
+    1: [0, 2, 4, 5],    // 中上(1) 邻接 左上(0)、右上(2)、右右中(4)、最右中(5)
+    2: [0, 1, 3, 5],    // 右上(2) 邻接 左上(0)、中上(1)、右中(3)、最右中(5)
+    3: [0, 2, 4, 5],    // 右中(3) 邻接 左上(0)、右上(2)、右右中(4)、最右中(5)
+    4: [0, 1, 3, 5],    // 右右中(4) 邻接 左上(0)、中上(1)、右中(3)、最右中(5)
+    5: [1, 2, 3, 4]     // 最右中(5) 邻接 中上(1)、右上(2)、右中(3)、右右中(4)
+};
+
+// 特殊形状展开图的位置邻接关系
+// 位置布局: [0:左上, 1:右上, 2:右中, 3:右右中, 4:最右中, 5:右下]
+// pattern: [[0,0], [0,1], [1,1], [1,2], [1,3], [2,2]]
+const SPECIAL_POSITION_ADJACENCY = {
+    0: [1, 2, 3, 4],    // 左上(0) 邻接 右上(1)、右中(2)、右右中(3)、最右中(4)
+    1: [0, 2, 4, 5],    // 右上(1) 邻接 左上(0)、右中(2)、最右中(4)、右下(5)
+    2: [0, 1, 3, 5],    // 右中(2) 邻接 左上(0)、右上(1)、右右中(3)、右下(5)
+    3: [0, 2, 4, 5],    // 右右中(3) 邻接 左上(0)、右中(2)、最右中(4)、右下(5)
+    4: [0, 1, 3, 5],    // 最右中(4) 邻接 左上(0)、右上(1)、右右中(3)、右下(5)
+    5: [1, 2, 3, 4]     // 右下(5) 邻接 右上(1)、右中(2)、右右中(3)、最右中(4)
+};
+
+// 另一种特殊形状展开图的位置邻接关系
+// 位置布局: [0:中上, 1:左中, 2:中心, 3:右中, 4:下中, 5:下右]
+// pattern: [[0,2], [1,0], [1,1], [1,2], [2,2], [2,3]]
+const ANOTHER_SPECIAL_POSITION_ADJACENCY = {
+    0: [1, 2, 3, 4],    // 中上(0) 邻接 左中(1)、中心(2)、右中(3)、下中(4)
+    1: [0, 2, 4, 5],    // 左中(1) 邻接 中上(0)、中心(2)、下中(4)、下右(5)
+    2: [0, 1, 3, 5],    // 中心(2) 邻接 中上(0)、左中(1)、右中(3)、下右(5)
+    3: [0, 2, 4, 5],    // 右中(3) 邻接 中上(0)、中心(2)、下中(4)、下右(5)
+    4: [0, 1, 3, 5],    // 下中(4) 邻接 中上(0)、左中(1)、右中(3)、下右(5)
+    5: [1, 2, 3, 4]     // 下右(5) 邻接 左中(1)、中心(2)、右中(3)、下中(4)
+};
+
+// 阶梯形变体展开图的位置邻接关系
+// 位置布局: [0:左上, 1:右上, 2:右中, 3:右右中, 4:右下中, 5:右下右]
+// pattern: [[0,0], [0,1], [1,1], [1,2], [2,2], [2,3]]
+const STAIR_POSITION_ADJACENCY = {
+    0: [1, 2, 3, 4],    // 左上(0) 邻接 右上(1)、右中(2)、右右中(3)、右下中(4)
+    1: [0, 2, 4, 5],    // 右上(1) 邻接 左上(0)、右中(2)、右下中(4)、右下右(5)
+    2: [0, 1, 3, 5],    // 右中(2) 邻接 左上(0)、右上(1)、右右中(3)、右下右(5)
+    3: [0, 2, 4, 5],    // 右右中(3) 邻接 左上(0)、右中(2)、右下中(4)、右下右(5)
+    4: [0, 1, 3, 5],    // 右下中(4) 邻接 左上(0)、右上(1)、右右中(3)、右下右(5)
+    5: [1, 2, 3, 4]     // 右下右(5) 邻接 右上(1)、右中(2)、右右中(3)、右下中(4)
+};
+
 // 展开图类型的位置邻接关系映射
 const POSITION_ADJACENCY_MAP = {
     '十字形': CROSS_POSITION_ADJACENCY,
     'T形': T_POSITION_ADJACENCY,
+    'T形变体': T_VARIANT_POSITION_ADJACENCY,
+    'L形变体1': L_VARIANT1_POSITION_ADJACENCY,
+    'L形变体2': L_VARIANT2_POSITION_ADJACENCY,
+    'Z形变体': Z_VARIANT_POSITION_ADJACENCY,
+    '特殊形状': SPECIAL_POSITION_ADJACENCY,
     'Z形': Z_POSITION_ADJACENCY,
-    'L形': L_POSITION_ADJACENCY
+    '另一种特殊形状': ANOTHER_SPECIAL_POSITION_ADJACENCY,
+    'L形': L_POSITION_ADJACENCY,
+    '阶梯形变体': STAIR_POSITION_ADJACENCY
 };
 
 // 当前使用的位置邻接关系表（默认为十字形）
@@ -130,12 +221,110 @@ const L_NET_VERTICES = [
     { vertex: 8, positions: [1, 4, 5], description: "中间最左-中间最右-下方左对齐" }
 ];
 
+// T形变体展开图的立方体顶点定义  
+// 位置布局: [0:上, 1:左中, 2:中心, 3:右中, 4:最右中, 5:下]
+const T_VARIANT_NET_VERTICES = [
+    { vertex: 1, positions: [0, 1, 2], description: "上-左中-中心" },
+    { vertex: 2, positions: [0, 2, 3], description: "上-中心-右中" },
+    { vertex: 3, positions: [0, 3, 4], description: "上-右中-最右中" },
+    { vertex: 4, positions: [1, 2, 5], description: "左中-中心-下" },
+    { vertex: 5, positions: [2, 3, 5], description: "中心-右中-下" },
+    { vertex: 6, positions: [3, 4, 5], description: "右中-最右中-下" },
+    { vertex: 7, positions: [0, 1, 4], description: "上-左中-最右中" },
+    { vertex: 8, positions: [1, 4, 5], description: "左中-最右中-下" }
+];
+
+// L形变体1展开图的立方体顶点定义
+// 位置布局: [0:左上, 1:中上, 2:右上, 3:最右上, 4:左下, 5:底左]
+const L_VARIANT1_NET_VERTICES = [
+    { vertex: 1, positions: [0, 1, 2], description: "左上-中上-右上" },
+    { vertex: 2, positions: [0, 2, 3], description: "左上-右上-最右上" },
+    { vertex: 3, positions: [1, 2, 4], description: "中上-右上-左下" },
+    { vertex: 4, positions: [2, 3, 4], description: "右上-最右上-左下" },
+    { vertex: 5, positions: [0, 1, 5], description: "左上-中上-底左" },
+    { vertex: 6, positions: [1, 4, 5], description: "中上-左下-底左" },
+    { vertex: 7, positions: [0, 3, 5], description: "左上-最右上-底左" },
+    { vertex: 8, positions: [2, 3, 5], description: "右上-最右上-底左" }
+];
+
+// L形变体2展开图的立方体顶点定义
+// 位置布局: [0:右上, 1:左中, 2:左中右, 3:右中, 4:最右中, 5:下左]
+const L_VARIANT2_NET_VERTICES = [
+    { vertex: 1, positions: [0, 1, 2], description: "右上-左中-左中右" },
+    { vertex: 2, positions: [0, 2, 3], description: "右上-左中右-右中" },
+    { vertex: 3, positions: [0, 3, 4], description: "右上-右中-最右中" },
+    { vertex: 4, positions: [1, 2, 5], description: "左中-左中右-下左" },
+    { vertex: 5, positions: [2, 3, 5], description: "左中右-右中-下左" },
+    { vertex: 6, positions: [3, 4, 5], description: "右中-最右中-下左" },
+    { vertex: 7, positions: [0, 1, 4], description: "右上-左中-最右中" },
+    { vertex: 8, positions: [1, 4, 5], description: "左中-最右中-下左" }
+];
+
+// Z形变体展开图的立方体顶点定义
+// 位置布局: [0:左上, 1:中上, 2:右上, 3:右中, 4:右右中, 5:最右中]
+const Z_VARIANT_NET_VERTICES = [
+    { vertex: 1, positions: [0, 1, 2], description: "左上-中上-右上" },
+    { vertex: 2, positions: [1, 2, 3], description: "中上-右上-右中" },
+    { vertex: 3, positions: [2, 3, 4], description: "右上-右中-右右中" },
+    { vertex: 4, positions: [3, 4, 5], description: "右中-右右中-最右中" },
+    { vertex: 5, positions: [0, 1, 4], description: "左上-中上-右右中" },
+    { vertex: 6, positions: [1, 2, 5], description: "中上-右上-最右中" },
+    { vertex: 7, positions: [0, 2, 4], description: "左上-右上-右右中" },
+    { vertex: 8, positions: [1, 3, 5], description: "中上-右中-最右中" }
+];
+
+// 特殊形状展开图的立方体顶点定义
+// 位置布局: [0:左上, 1:右上, 2:右中, 3:右右中, 4:最右中, 5:右下]
+const SPECIAL_NET_VERTICES = [
+    { vertex: 1, positions: [0, 1, 2], description: "左上-右上-右中" },
+    { vertex: 2, positions: [1, 2, 3], description: "右上-右中-右右中" },
+    { vertex: 3, positions: [2, 3, 4], description: "右中-右右中-最右中" },
+    { vertex: 4, positions: [2, 4, 5], description: "右中-最右中-右下" },
+    { vertex: 5, positions: [0, 1, 3], description: "左上-右上-右右中" },
+    { vertex: 6, positions: [1, 3, 5], description: "右上-右右中-右下" },
+    { vertex: 7, positions: [0, 2, 4], description: "左上-右中-最右中" },
+    { vertex: 8, positions: [1, 4, 5], description: "右上-最右中-右下" }
+];
+
+// 另一种特殊形状展开图的立方体顶点定义
+// 位置布局: [0:中上, 1:左中, 2:中心, 3:右中, 4:下中, 5:下右]
+const ANOTHER_SPECIAL_NET_VERTICES = [
+    { vertex: 1, positions: [0, 1, 2], description: "中上-左中-中心" },
+    { vertex: 2, positions: [0, 2, 3], description: "中上-中心-右中" },
+    { vertex: 3, positions: [1, 2, 4], description: "左中-中心-下中" },
+    { vertex: 4, positions: [2, 3, 4], description: "中心-右中-下中" },
+    { vertex: 5, positions: [0, 1, 4], description: "中上-左中-下中" },
+    { vertex: 6, positions: [0, 3, 4], description: "中上-右中-下中" },
+    { vertex: 7, positions: [1, 4, 5], description: "左中-下中-下右" },
+    { vertex: 8, positions: [3, 4, 5], description: "右中-下中-下右" }
+];
+
+// 阶梯形变体展开图的立方体顶点定义
+// 位置布局: [0:左上, 1:右上, 2:右中, 3:右右中, 4:右下中, 5:右下右]
+const STAIR_NET_VERTICES = [
+    { vertex: 1, positions: [0, 1, 2], description: "左上-右上-右中" },
+    { vertex: 2, positions: [1, 2, 3], description: "右上-右中-右右中" },
+    { vertex: 3, positions: [2, 3, 4], description: "右中-右右中-右下中" },
+    { vertex: 4, positions: [3, 4, 5], description: "右右中-右下中-右下右" },
+    { vertex: 5, positions: [0, 1, 3], description: "左上-右上-右右中" },
+    { vertex: 6, positions: [1, 3, 5], description: "右上-右右中-右下右" },
+    { vertex: 7, positions: [0, 2, 4], description: "左上-右中-右下中" },
+    { vertex: 8, positions: [1, 4, 5], description: "右上-右下中-右下右" }
+];
+
 // 展开图类型到顶点定义的映射
 const NET_VERTICES_MAP = {
     '十字形': CROSS_NET_VERTICES,
     'T形': T_NET_VERTICES,
+    'T形变体': T_VARIANT_NET_VERTICES,
+    'L形变体1': L_VARIANT1_NET_VERTICES,
+    'L形变体2': L_VARIANT2_NET_VERTICES,
+    'Z形变体': Z_VARIANT_NET_VERTICES,
+    '特殊形状': SPECIAL_NET_VERTICES,
     'Z形': Z_NET_VERTICES,
-    'L形': L_NET_VERTICES
+    '另一种特殊形状': ANOTHER_SPECIAL_NET_VERTICES,
+    'L形': L_NET_VERTICES,
+    '阶梯形变体': STAIR_NET_VERTICES
 };
 
 // 缓存有效的三面组合，避免重复计算
@@ -551,7 +740,7 @@ function runAdjacencyTests() {
     
     try {
         // 测试所有展开图类型
-        const netTypes = ['十字形', 'T形', 'Z形', 'L形'];
+        const netTypes = ['十字形', 'T形', 'T形变体', 'L形变体1', 'L形变体2', 'Z形变体', '特殊形状', 'Z形', '另一种特殊形状', 'L形', '阶梯形变体'];
         let allTestsPassed = true;
         
         for (const netType of netTypes) {

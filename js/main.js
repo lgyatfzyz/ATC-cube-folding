@@ -10,6 +10,7 @@ let currentGame = {
     questionNumber: 1
 };
 
+
 /**
  * 初始化游戏（增强错误处理）
  */
@@ -78,6 +79,7 @@ function bindEventListeners() {
     // 键盘事件 (可选功能)
     document.addEventListener('keydown', handleKeyPress);
 }
+
 
 /**
  * 处理键盘按键事件

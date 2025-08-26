@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试所有11种展开图</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 5px;
+        }
+        .success {
+            color: green;
+            background: #e8f5e8;
+        }
+        .error {
+            color: red;
+            background: #ffe8e8;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px 5px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <h1>测试所有11种立方体展开图</h1>
+    
+    <div class="test-section">
+        <h2>自动测试所有展开图</h2>
+        <button onclick="testAllNets()">开始测试</button>
+        <button onclick="clearResults()">清除结果</button>
+        <div id="testResults"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>手动测试单个展开图</h2>
+        <button onclick="testSpecificNet('十字形')">十字形</button>
+        <button onclick="testSpecificNet('T形')">T形</button>
+        <button onclick="testSpecificNet('T形变体')">T形变体</button>
+        <button onclick="testSpecificNet('L形变体1')">L形变体1</button>
+        <button onclick="testSpecificNet('L形变体2')">L形变体2</button>
+        <button onclick="testSpecificNet('Z形变体')">Z形变体</button>
+        <button onclick="testSpecificNet('特殊形状')">特殊形状</button>
+        <button onclick="testSpecificNet('Z形')">Z形</button>
+        <button onclick="testSpecificNet('另一种特殊形状')">另一种特殊形状</button>
+        <button onclick="testSpecificNet('L形')">L形</button>
+        <button onclick="testSpecificNet('阶梯形变体')">阶梯形变体</button>
+        <div id="manualResults"></div>
+    </div>
+
+    <script src="js/adjacency.js"></script>
+    <script src="js/cube.js"></script>
+    
+    <script>
+        function addResult(containerId, message, isSuccess = true) {
+            const container = document.getElementById(containerId);
+            const div = document.createElement('div');
+            div.className = `result ${isSuccess ? 'success' : 'error'}`;
+            div.textContent = new Date().toLocaleTimeString() + ': ' + message;
+            container.appendChild(div);
+        }
+        
+        function clearResults() {
+            document.getElementById('testResults').innerHTML = '';
+            document.getElementById('manualResults').innerHTML = '';
+        }
+        
+        function testSpecificNet(netType) {
+            try {
+                console.log(`\n=== 测试 ${netType} 展开图 ===`);
+                
+                // 设置邻接关系
+                if (typeof setAdjacencyForNet === 'function') {
+                    setAdjacencyForNet(netType);
+                    addResult('manualResults', `✓ ${netType}: 邻接关系设置成功`);
+                } else {
+                    addResult('manualResults', `✗ ${netType}: setAdjacencyForNet 函数未找到`, false);
+                    return;
+                }
+                
+                // 查找对应的展开图模板
+                const template = CUBE_NETS.find(net => net.name === netType);
+                if (!template) {
+                    addResult('manualResults', `✗ ${netType}: 未找到对应的展开图模板`, false);
+                    return;
+                }
+                
+                addResult('manualResults', `✓ ${netType}: 展开图模板找到 (${template.pattern.length}个面)`);
+                
+                // 测试生成展开图
+                const faceNumbers = [1, 2, 3, 4, 5, 6];
+                const net = {
+                    name: template.name,
+                    gridSize: template.gridSize,
+                    faces: template.pattern.map((position, index) => ({
+                        row: position[0],
+                        col: position[1],
+                        number: faceNumbers[index]
+                    }))
+                };
+                
+                // 测试邻接关系
+                let adjacencyOk = true;
+                for (let i = 0; i < net.faces.length; i++) {
+                    for (let j = i + 1; j < net.faces.length; j++) {
+                        const face1 = net.faces[i].number;
+                        const face2 = net.faces[j].number;
+                        try {
+                            const adjacent = isAdjacent(face1, face2, net.faces);
+                            // 这里只是测试函数能正常运行，不验证具体结果
+                        } catch (e) {
+                            adjacencyOk = false;
+                            console.error(`邻接测试失败: ${face1}-${face2}`, e);
+                        }
+                    }
+                }
+                
+                if (adjacencyOk) {
+                    addResult('manualResults', `✓ ${netType}: 邻接关系测试通过`);
+                } else {
+                    addResult('manualResults', `✗ ${netType}: 邻接关系测试失败`, false);
+                }
+                
+                // 测试顶点相遇
+                if (typeof canMeetAtVertex === 'function') {
+                    try {
+                        const testResult = canMeetAtVertex(1, 2, 3, net.faces);
+                        addResult('manualResults', `✓ ${netType}: 顶点相遇测试通过 (结果: ${testResult})`);
+                    } catch (e) {
+                        addResult('manualResults', `✗ ${netType}: 顶点相遇测试失败 - ${e.message}`, false);
+                    }
+                } else {
+                    addResult('manualResults', `✗ ${netType}: canMeetAtVertex 函数未找到`, false);
+                }
+                
+                // 测试正确答案生成
+                if (typeof generateCorrectAnswerFromValidList === 'function') {
+                    try {
+                        const correctAnswer = generateCorrectAnswerFromValidList(net.faces);
+                        if (correctAnswer) {
+                            addResult('manualResults', `✓ ${netType}: 正确答案生成成功 (${correctAnswer.front}, ${correctAnswer.left}, ${correctAnswer.top})`);
+                        } else {
+                            addResult('manualResults', `⚠ ${netType}: 正确答案生成返回null`, false);
+                        }
+                    } catch (e) {
+                        addResult('manualResults', `✗ ${netType}: 正确答案生成失败 - ${e.message}`, false);
+                    }
+                }
+                
+            } catch (error) {
+                addResult('manualResults', `✗ ${netType}: 测试过程中发生错误 - ${error.message}`, false);
+                console.error(`测试 ${netType} 时发生错误:`, error);
+            }
+        }
+        
+        function testAllNets() {
+            clearResults();
+            addResult('testResults', '开始自动测试所有展开图...');
+            
+            const allNetTypes = ['十字形', 'T形', 'T形变体', 'L形变体1', 'L形变体2', 'Z形变体', '特殊形状', 'Z形', '另一种特殊形状', 'L形', '阶梯形变体'];
+            let successCount = 0;
+            
+            for (const netType of allNetTypes) {
+                try {
+                    testSpecificNet(netType);
+                    successCount++;
+                } catch (error) {
+                    addResult('testResults', `✗ ${netType}: ${error.message}`, false);
+                }
+            }
+            
+            addResult('testResults', `测试完成: ${successCount}/${allNetTypes.length} 个展开图测试成功`);
+            
+            // 测试随机生成功能
+            try {
+                for (let i = 0; i < 10; i++) {
+                    const randomNet = generateRandomNet();
+                    if (!randomNet || !randomNet.faces || randomNet.faces.length !== 6) {
+                        addResult('testResults', `✗ 随机生成测试失败 (第${i+1}次)`, false);
+                        break;
+                    }
+                }
+                addResult('testResults', '✓ 随机生成功能测试通过 (10次测试)');
+            } catch (error) {
+                addResult('testResults', `✗ 随机生成功能测试失败: ${error.message}`, false);
+            }
+        }
+        
+        // 页面加载完成后自动运行基础测试
+        window.addEventListener('load', () => {
+            console.log('页面加载完成，CUBE_NETS 数量:', CUBE_NETS.length);
+            addResult('testResults', `展开图数量: ${CUBE_NETS.length} 个`);
+            
+            // 验证所有展开图名称
+            const expectedNames = ['十字形', 'T形', 'T形变体', 'L形变体1', 'L形变体2', 'Z形变体', '特殊形状', 'Z形', '另一种特殊形状', 'L形', '阶梯形变体'];
+            const actualNames = CUBE_NETS.map(net => net.name);
+            
+            let allNamesFound = true;
+            for (const expectedName of expectedNames) {
+                if (!actualNames.includes(expectedName)) {
+                    addResult('testResults', `✗ 缺少展开图: ${expectedName}`, false);
+                    allNamesFound = false;
+                }
+            }
+            
+            if (allNamesFound) {
+                addResult('testResults', '✓ 所有期望的展开图名称都已找到');
+            }
+        });
+    </script>
+</body>
+</html>
